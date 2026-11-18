@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: Please cite AeroForge if you use it in research.
+title: AeroForge
+type: software
+version: 0.1.0
+license: Apache-2.0
+authors:
+  - name: AeroForge contributors
+repository-code: https://github.com/massimiliano-nole/aeroforge
+keywords:
+  - aircraft
+  - prognostics
+  - C-MAPSS
+  - flight mechanics
