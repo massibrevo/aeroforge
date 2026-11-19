@@ -4,7 +4,8 @@ import { BufferGeometry, CanvasTexture, PMREMGenerator, Vector3 } from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { Aircraft } from './Aircraft'
-import { type Airframe, type Sample } from './api'
+import { fmt, type Airframe, type Sample } from './api'
+import { aircraftReference } from './catalog'
 
 class GraphicsBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
@@ -19,15 +20,19 @@ const views = {
   Top: [0, 1.85, -.014],
 } as const
 type View = keyof typeof views
+const flightViews = ['Follow aircraft', 'Full trajectory'] as const
+type FlightView = typeof flightViews[number]
 
-function Orbit({ view, revision }: { view: View; revision: number }) {
+function Orbit({ view, revision, following }: { view: View; revision: number; following?: Vector3 }) {
   const { camera, gl, invalidate, size } = useThree()
   const orbit = useRef<OrbitControls>(null)
+  const previousPoint = useRef(new Vector3())
+  const isFollowing = following !== undefined
   useEffect(() => {
     const canvas = gl.domElement
     const controls = new OrbitControls(camera, canvas)
     orbit.current = controls
-    controls.minDistance = 19
+    controls.minDistance = 3.2
     controls.maxDistance = 175
     controls.maxPolarAngle = Math.PI * .49
     canvas.tabIndex = 0
@@ -44,11 +49,26 @@ function Orbit({ view, revision }: { view: View; revision: number }) {
   useEffect(() => {
     if (!orbit.current) return
     const [x, y, z] = views[view]
-    camera.position.set(x, y, z).multiplyScalar((view === 'Perspective' ? 27 : 32) * portraitFit)
-    orbit.current.target.set(0, .6, 0)
+    if (isFollowing) {
+      camera.position.set(3.45, 1.75, -3.95).multiplyScalar(portraitFit)
+      orbit.current.target.set(0, 0, 0)
+    } else {
+      camera.position.set(x, y, z).multiplyScalar((view === 'Perspective' ? 27 : 32) * portraitFit)
+      orbit.current.target.set(0, .6, 0)
+    }
+    previousPoint.current.set(0, 0, 0)
     orbit.current.update()
     invalidate()
-  }, [camera, invalidate, portraitFit, revision, view])
+  }, [camera, invalidate, isFollowing, portraitFit, revision, view])
+  useEffect(() => {
+    if (!orbit.current || !following) return
+    const delta = new Vector3().subVectors(following, previousPoint.current)
+    camera.position.add(delta)
+    orbit.current.target.add(delta)
+    previousPoint.current.copy(following)
+    orbit.current.update()
+    invalidate()
+  }, [camera, following, invalidate, portraitFit, revision, view])
   return null
 }
 
@@ -95,11 +115,9 @@ function Floor({ height }: { height: number }) {
   </group>
 }
 
-function Trajectory({ airframe, samples, index }: { airframe: Airframe; samples: Sample[]; index: number }) {
-  const vectors = useMemo(() => {
-    const scale = 32 / Math.max(1, samples.at(-1)!.distance)
-    return samples.map(s => new Vector3((s.distance * scale) - 16, 1 + (s.altitude - samples[0].altitude) * scale, 0))
-  }, [samples])
+function Trajectory({ airframe, samples, index, vectors }: {
+  airframe: Airframe; samples: Sample[]; index: number; vectors: Vector3[]
+}) {
   const geometry = useMemo(() =>
     new BufferGeometry().setFromPoints(vectors.slice(1).flatMap((point, i) => [vectors[i], point])), [vectors])
   useEffect(() => () => geometry.dispose(), [geometry])
@@ -118,15 +136,26 @@ export function Scene({ airframe, samples, index = 0, controls = false }: {
   airframe: Airframe; samples?: Sample[]; index?: number; controls?: boolean
 }) {
   const [camera, setCamera] = useState<{ view: View; revision: number }>({ view: 'Perspective', revision: 0 })
+  const [flightView, setFlightView] = useState<FlightView>('Follow aircraft')
+  const vectors = useMemo(() => {
+    if (!samples?.length) return []
+    const scale = 32 / Math.max(1, samples.at(-1)!.distance)
+    return samples.map(s => new Vector3(s.distance * scale - 16, 1 + (s.altitude - samples[0].altitude) * scale, 0))
+  }, [samples])
+  const following = flightView === 'Follow aircraft' ? vectors[index] : undefined
+  const sample = samples?.[index]
+  const reference = aircraftReference(airframe.profile)
+  const name = reference ? `${reference.maker} ${reference.variant}` :
+    airframe.profile === 'glider' ? 'Concept glider' : 'Concept airframe'
   const scale = 42 / Math.max(airframe.span, airframe.length)
-  return <div className="scene">
+  return <div className={`scene${samples ? ' flight-scene' : ''}${following ? ' flight-follow' : ''}`}>
     <div className="scene-render" role="img" aria-label={samples ? 'Interactive 3D flight trajectory' : 'Interactive 3D aircraft geometry'}>
       <GraphicsBoundary>
         <Canvas frameloop="demand" dpr={[1, 1.6]} camera={{ fov: 40, near: .1, far: 260, position: [30, 16, -37] }}>
           <StudioLighting />
-          <Floor height={samples ? -2.5 : -.9 * airframe.width * scale} />
-          <Orbit {...camera} />
-          {samples ? <Trajectory airframe={airframe} samples={samples} index={index} /> :
+          {!following && <Floor height={samples ? -2.5 : -.9 * airframe.width * scale} />}
+          <Orbit {...camera} following={following} />
+          {samples ? <Trajectory airframe={airframe} samples={samples} index={index} vectors={vectors} /> :
             <group scale={scale}><Aircraft config={airframe} /></group>}
         </Canvas>
       </GraphicsBoundary>
@@ -135,6 +164,16 @@ export function Scene({ airframe, samples, index = 0, controls = false }: {
       {(Object.keys(views) as View[]).map(view => <button key={view} aria-pressed={camera.view === view}
         onClick={() => setCamera({ view, revision: camera.revision + 1 })}>{view}</button>)}
     </div>}
+    {sample && <>
+      <div className="scene-views" role="group" aria-label="Flight camera">
+        {flightViews.map(view => <button key={view} aria-pressed={flightView === view}
+          onClick={() => setFlightView(view)}>{view}</button>)}
+      </div>
+      <div className="scene-flight-readout" aria-label="Simulated aircraft and current sample">
+        <strong>{name}</strong>
+        <span>{fmt(sample.altitude, 0)} m · {fmt(sample.speed)} m/s</span>
+      </div>
+    </>}
     <span className="scene-help">Drag to orbit · Scroll to zoom</span>
     {!samples && <span className="scene-dimensions">{airframe.span.toFixed(1)} m span · {airframe.area.toFixed(1)} m²</span>}
   </div>

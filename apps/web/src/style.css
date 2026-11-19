@@ -98,8 +98,8 @@ details { font-size: .8rem; }
 details p { margin: 8px 0; overflow-wrap: anywhere; }
 summary { cursor: pointer; color: var(--blue); }
 code { overflow-wrap: anywhere; }
-.skip { position: fixed; top: -100px; left: 8px; z-index: 5; background: #102535; color: white; padding: 10px; }
-.skip:focus { top: 5px; }
+.skip { clip-path: inset(50%); position: fixed; top: 5px; left: 8px; z-index: 5; background: #102535; color: white; padding: 10px; }
+.skip:focus { clip-path: none; }
 @media (max-width: 1080px) {
   main,.toolbar { padding-left: 18px; padding-right: 18px; }
   .work-grid { grid-template-columns: minmax(0,1.45fr) minmax(238px,1fr); }
@@ -225,4 +225,19 @@ code { overflow-wrap: anywhere; }
   .studio-viewport .scene-help { display: none; }
   .hero-preview .scene-dimensions { top: auto; left: 10px; right: auto; bottom: 10px; }
   .hero-preview .scene-help { font-size: .5rem; }
+}
+
+.aircraft-reference { padding: 10px 0; border-block: 1px solid var(--border); }
+.aircraft-reference dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px 10px; font-size: .73rem; }
+.aircraft-reference dt { color: var(--muted); }
+.aircraft-reference dd { margin: 0; text-align: right; color: #edf3fa; }
+.aircraft-sources { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+.scene-flight-readout { position: absolute; right: 10px; top: 10px; display: grid; text-align: right; padding: 8px 10px; background: #0f1118e8; border: 1px solid #454b56; color: #e0e5ef; font: .68rem var(--mono); pointer-events: none; gap: 5px; }
+.scene-flight-readout span { color: #bfcbda; }
+
+.flight-scene { height: clamp(340px, 37vw, 500px); }
+.flight-follow { background: radial-gradient(ellipse at 44% 78%, #475f76 0%, #26394d 55%, #121d2c 100%); }
+@media (max-width: 540px) {
+  .flight-scene .scene-help { display: none; }
+  .flight-scene { height: 315px; }
 }

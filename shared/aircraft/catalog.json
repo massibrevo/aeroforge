@@ -1,0 +1,130 @@
+{
+  "b738": {
+    "maker": "Boeing",
+    "variant": "737-800",
+    "geometry": {"length": 39.5, "span": 35.8, "width": 3.76, "area": 125, "taper": 0.26, "sweep": 25, "dihedral": 6, "tail": 1},
+    "reference": {"height": 12.5, "mtow": 79010, "powerplant": "CFM56-7B", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "winglet", "engineStations": [0.37], "wingStation": 0.445, "nose": 0.13, "nacelle": 0.33, "cabin": 42, "finHeight": 1.61},
+    "sources": ["https://www.boeing.com/commercial/737ng/737-next-generation-design-highlights", "https://www.boeing.com/commercial/737ng"]
+  },
+  "b38m": {
+    "maker": "Boeing",
+    "variant": "737 MAX 8",
+    "geometry": {"length": 39.5, "span": 35.9, "width": 3.76, "area": 127, "taper": 0.26, "sweep": 25, "dihedral": 6, "tail": 1},
+    "reference": {"height": 12.3, "mtow": 82640, "powerplant": "CFM LEAP-1B", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "split", "engineStations": [0.36], "wingStation": 0.445, "nose": 0.13, "nacelle": 0.36, "cabin": 42, "finHeight": 1.61},
+    "sources": ["https://www.boeing.com/commercial/737max"]
+  },
+  "b748": {
+    "maker": "Boeing",
+    "variant": "747-8 Intercontinental",
+    "geometry": {"length": 76.3, "span": 68.4, "width": 6.5, "area": 550, "taper": 0.25, "sweep": 37, "dihedral": 6, "tail": 1.1},
+    "reference": {"height": 19.4, "mtow": 447700, "powerplant": "GE GEnx-2B67", "wingAreaPublished": false},
+    "visual": {"body": "hump", "tip": "raked", "engineStations": [0.36, 0.66], "wingStation": 0.43, "nose": 0.095, "nacelle": 0.29, "cabin": 57, "finHeight": 1.72},
+    "sources": ["https://www.boeing.com/content/dam/boeing/boeingdotcom/company/about_bca/startup/pdf/historical/747-8I_-_passenger.pdf"]
+  },
+  "b77w": {
+    "maker": "Boeing",
+    "variant": "777-300ER",
+    "geometry": {"length": 73.9, "span": 64.8, "width": 6.2, "area": 437, "taper": 0.22, "sweep": 32, "dihedral": 6, "tail": 1},
+    "reference": {"height": 18.5, "mtow": 351530, "powerplant": "GE90-115B", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "raked", "engineStations": [0.36], "wingStation": 0.445, "nose": 0.102, "nacelle": 0.36, "cabin": 57, "finHeight": 1.61},
+    "sources": ["https://www.boeing.com/commercial/777/design-highlights"]
+  },
+  "b788": {
+    "maker": "Boeing",
+    "variant": "787-8",
+    "geometry": {"length": 56.72, "span": 60.12, "width": 5.77, "area": 325, "taper": 0.22, "sweep": 32, "dihedral": 6, "tail": 0.97},
+    "reference": {"height": 16.92, "mtow": 227930, "powerplant": "GEnx-1B or Trent 1000", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "raked", "engineStations": [0.37], "wingStation": 0.445, "nose": 0.118, "nacelle": 0.34, "cabin": 44, "finHeight": 1.61},
+    "sources": ["https://www.boeing.com/content/dam/boeing/v2/airports/acaps/787_Rev_P.pdf", "https://www.boeing.com/commercial/787"]
+  },
+  "b789": {
+    "maker": "Boeing",
+    "variant": "787-9",
+    "geometry": {"length": 62.81, "span": 60.12, "width": 5.77, "area": 325, "taper": 0.22, "sweep": 32, "dihedral": 6, "tail": 0.97},
+    "reference": {"height": 17.02, "mtow": 259220, "powerplant": "GEnx-1B or Trent 1000", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "raked", "engineStations": [0.37], "wingStation": 0.445, "nose": 0.108, "nacelle": 0.35, "cabin": 50, "finHeight": 1.61},
+    "sources": ["https://www.boeing.com/content/dam/boeing/v2/airports/acaps/787_Rev_P.pdf", "https://www.boeing.com/commercial/787"]
+  },
+  "a223": {
+    "maker": "Airbus",
+    "variant": "A220-300",
+    "geometry": {"length": 38.7, "span": 35.1, "width": 3.5, "area": 112.3, "taper": 0.25, "sweep": 25, "dihedral": 5, "tail": 1},
+    "reference": {"height": 11.5, "mtow": 70900, "powerplant": "Pratt & Whitney PW1500G", "wingAreaPublished": true},
+    "visual": {"body": "single", "tip": "winglet", "engineStations": [0.4], "wingStation": 0.445, "nose": 0.125, "nacelle": 0.39, "cabin": 36, "finHeight": 1.61},
+    "sources": ["https://www.aircraft.airbus.com/en/aircraft/a220/a220-300", "https://www.aircraft.airbus.com/sites/g/files/jlcbta126/files/2025-12/A220-300ARP-Issue106-00-27Nov2025.pdf"]
+  },
+  "a19n": {
+    "maker": "Airbus",
+    "variant": "A319neo",
+    "geometry": {"length": 33.84, "span": 35.8, "width": 3.95, "area": 123, "taper": 0.29, "sweep": 25, "dihedral": 5, "tail": 1},
+    "reference": {"height": 11.76, "mtow": 75500, "powerplant": "LEAP-1A or PW1100G-JM", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "sharklet", "engineStations": [0.39], "wingStation": 0.45, "nose": 0.145, "nacelle": 0.37, "cabin": 33, "finHeight": 1.61},
+    "sources": ["https://www.aircraft.airbus.com/en/aircraft/a320-family/a319neo"]
+  },
+  "a20n": {
+    "maker": "Airbus",
+    "variant": "A320neo",
+    "geometry": {"length": 37.57, "span": 35.8, "width": 3.95, "area": 123, "taper": 0.29, "sweep": 25, "dihedral": 5, "tail": 1},
+    "reference": {"height": 11.76, "mtow": 79000, "powerplant": "LEAP-1A or PW1100G-JM", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "sharklet", "engineStations": [0.39], "wingStation": 0.46, "nose": 0.132, "nacelle": 0.37, "cabin": 38, "finHeight": 1.61},
+    "sources": ["https://www.aircraft.airbus.com/en/aircraft/a320-family/a320neo"]
+  },
+  "a21n": {
+    "maker": "Airbus",
+    "variant": "A321neo",
+    "geometry": {"length": 44.51, "span": 35.8, "width": 3.95, "area": 123, "taper": 0.29, "sweep": 25, "dihedral": 5, "tail": 1},
+    "reference": {"height": 11.76, "mtow": 97000, "powerplant": "LEAP-1A or PW1100G-JM", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "sharklet", "engineStations": [0.39], "wingStation": 0.47, "nose": 0.115, "nacelle": 0.37, "cabin": 48, "finHeight": 1.61},
+    "sources": ["https://www.aircraft.airbus.com/en/aircraft/a320-family/a321neo"]
+  },
+  "a339": {
+    "maker": "Airbus",
+    "variant": "A330-900",
+    "geometry": {"length": 63.69, "span": 64, "width": 5.64, "area": 362, "taper": 0.25, "sweep": 30, "dihedral": 6, "tail": 1.01},
+    "reference": {"height": 16.79, "mtow": 253000, "powerplant": "Rolls-Royce Trent 7000", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "blended", "engineStations": [0.38], "wingStation": 0.445, "nose": 0.122, "nacelle": 0.34, "cabin": 51, "finHeight": 1.61},
+    "sources": ["https://www.aircraft.airbus.com/en/aircraft/a330/a330-900"]
+  },
+  "a359": {
+    "maker": "Airbus",
+    "variant": "A350-900",
+    "geometry": {"length": 66.8, "span": 64.75, "width": 5.96, "area": 443, "taper": 0.23, "sweep": 32, "dihedral": 5, "tail": 0.98},
+    "reference": {"height": 17.05, "mtow": 283000, "powerplant": "Rolls-Royce Trent XWB-84", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "blended", "engineStations": [0.4], "wingStation": 0.445, "nose": 0.125, "nacelle": 0.37, "cabin": 53, "finHeight": 1.61},
+    "sources": ["https://mediaassets.airbus.com/pm_38_898_898668-3xlxpks93j.pdf?fileName=airbus-a350-family-facts-and-figures-april-2026.pdf"]
+  },
+  "a35k": {
+    "maker": "Airbus",
+    "variant": "A350-1000",
+    "geometry": {"length": 73.78, "span": 64.75, "width": 5.96, "area": 464, "taper": 0.23, "sweep": 32, "dihedral": 5, "tail": 1.02},
+    "reference": {"height": 17.08, "mtow": 322000, "powerplant": "Rolls-Royce Trent XWB-97", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "blended", "engineStations": [0.4], "wingStation": 0.445, "nose": 0.112, "nacelle": 0.38, "cabin": 60, "finHeight": 1.61},
+    "sources": ["https://mediaassets.airbus.com/pm_38_898_898668-3xlxpks93j.pdf?fileName=airbus-a350-family-facts-and-figures-april-2026.pdf"]
+  },
+  "a388": {
+    "maker": "Airbus",
+    "variant": "A380-800",
+    "geometry": {"length": 72.73, "span": 79.75, "width": 7.14, "area": 845, "taper": 0.23, "sweep": 33.5, "dihedral": 5, "tail": 1.1},
+    "reference": {"height": 24.1, "mtow": 575000, "powerplant": "Trent 900 or GP7200", "wingAreaPublished": true},
+    "visual": {"body": "double", "tip": "fence", "engineStations": [0.3712, 0.6445], "wingStation": 0.425, "nose": 0.123, "nacelle": 0.245, "cabin": 58, "finHeight": 1.8},
+    "sources": ["https://www.aircraft.airbus.com/sites/default/files/2025-12/AC_A380_20251201.pdf", "https://www.airbus.com/sites/default/files/2025-01/airbus-a380-facts-and-figures-february-2022.pdf"]
+  },
+  "e295": {
+    "maker": "Embraer",
+    "variant": "E195-E2",
+    "geometry": {"length": 41.6, "span": 35.12, "width": 3.35, "area": 102, "taper": 0.25, "sweep": 25, "dihedral": 5, "tail": 0.99},
+    "reference": {"height": 10.78, "mtow": 62500, "powerplant": "Pratt & Whitney PW1900G", "wingAreaPublished": false},
+    "visual": {"body": "single", "tip": "raked", "engineStations": [0.39], "wingStation": 0.445, "nose": 0.115, "nacelle": 0.39, "cabin": 42, "finHeight": 1.61},
+    "sources": ["https://www.embraer.com/media/vmsjxvk5/e-jets-e2_apm_e-jetse2.pdf", "https://www.embraer.com/media/q5sll1p5/e195-e2-spec.pdf"]
+  },
+  "at76": {
+    "maker": "ATR",
+    "variant": "72-600",
+    "geometry": {"length": 27.17, "span": 27.05, "width": 2.86, "area": 61, "taper": 0.53, "sweep": 2, "dihedral": 2, "tail": 1},
+    "reference": {"height": null, "mtow": 23000, "powerplant": "Pratt & Whitney Canada PW127XT-M", "wingAreaPublished": false},
+    "visual": {"body": "turboprop", "tip": "plain", "engineStations": [0.31], "wingStation": 0.46, "nose": 0.12, "nacelle": 0.29, "cabin": 29, "finHeight": 1.42},
+    "sources": ["https://www.atr-aircraft.com/wp-content/uploads/2022/06/ATR_Fiche72-600-3.pdf", "https://www.atr-aircraft.com/wp-content/uploads/2020/07/Factsheets_-_ATR_72-600.pdf"]
+  }
+}

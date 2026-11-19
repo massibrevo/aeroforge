@@ -1,26 +1,21 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import {
-  BufferGeometry, DoubleSide, Float32BufferAttribute, LatheGeometry,
+  BufferGeometry, CanvasTexture, DoubleSide, Float32BufferAttribute, LatheGeometry, SRGBColorSpace,
   Matrix4, Quaternion, Shape, Vector2, Vector3, type InstancedMesh,
 } from 'three'
-import { type Airframe, type AirframeProfile } from './api'
+import { type Airframe } from './api'
+import { aircraftReference, type AircraftVisual } from './catalog'
 
-type Profile = {
-  wingStation: number
-  finHeight: number
-  engineStations: number[]
-  nacelle: number
-  tip: 'plain' | 'winglet' | 'sharklet' | 'raked' | 'blended'
-  cabin: number
+const generic: AircraftVisual = {
+  body: 'single', wingStation: .44, finHeight: 1.43, engineStations: [.38], nacelle: .32,
+  tip: 'winglet', cabin: 30, nose: .13,
 }
-const profiles: Record<AirframeProfile, Profile> = {
-  generic: { wingStation: .44, finHeight: 1.43, engineStations: [.38], nacelle: .32, tip: 'winglet', cabin: 30 },
-  glider: { wingStation: .42, finHeight: .85, engineStations: [], nacelle: 0, tip: 'plain', cabin: 0 },
-  b738: { wingStation: .45, finHeight: 1.62, engineStations: [.37], nacelle: .33, tip: 'winglet', cabin: 42 },
-  b748: { wingStation: .43, finHeight: 1.72, engineStations: [.36, .66], nacelle: .29, tip: 'raked', cabin: 57 },
-  a20n: { wingStation: .46, finHeight: 1.56, engineStations: [.39], nacelle: .37, tip: 'sharklet', cabin: 38 },
-  a359: { wingStation: .44, finHeight: 1.63, engineStations: [.40], nacelle: .37, tip: 'blended', cabin: 53 },
+const glider: AircraftVisual = {
+  body: 'glider', wingStation: .42, finHeight: .85, engineStations: [], nacelle: 0,
+  tip: 'plain', cabin: 0, nose: .13,
 }
+const visualFor = (frame: Airframe) =>
+  aircraftReference(frame.profile)?.visual ?? (frame.profile === 'glider' ? glider : generic)
 
 const tau = Math.PI * 2
 const angle = Math.PI / 180
@@ -32,24 +27,27 @@ const smooth = (a: number, b: number, value: number) => {
 }
 
 function fuselagePoint(frame: Airframe, t: number, theta: number, lift = 0): [number, number, number] {
-  const glider = frame.profile === 'glider'
-  const nose = glider ? .13 : frame.profile === 'b748' ? .095 : .13
+  const profile = visualFor(frame)
+  const nose = profile.nose
   const approach = Math.min(1, t / nose)
   const front = Math.sqrt(1 - (1 - approach) ** 2)
-  const rear = 1 - .96 * smooth(glider ? .33 : .69, 1, t)
+  const rear = 1 - .96 * smooth(profile.body === 'glider' ? .33 : .69, 1, t)
   const radius = frame.width / 2 * front * rear
   const y = Math.sin(theta)
-  const hump = frame.profile === 'b748' ?
+  const hump = profile.body === 'hump' ?
     frame.width * .32 * smooth(.025, .15, t) * (1 - smooth(.255, .45, t)) * Math.max(y, 0) ** 1.85 : 0
   const rise = frame.width * (.20 * smooth(.75, 1, t) - .18 * (1 - smooth(0, nose, t)))
-  return [Math.cos(theta) * (radius + lift), (radius * (glider ? .85 : 1.02) + lift) * y + rise + hump,
+  return [Math.cos(theta) * (radius + lift), (radius * (profile.body === 'glider' ? .85 : profile.body === 'double' ? 1.24 : 1.02) + lift) * y + rise + hump,
     axial(t, frame.length)]
 }
 
 function surface(rows: number, columns: number, point: (row: number, col: number) => number[], reverse = false) {
-  const positions = [], index = []
+  const positions = [], index = [], uv = []
   for (let row = 0; row <= rows; row++) {
-    for (let col = 0; col <= columns; col++) positions.push(...point(row, col))
+    for (let col = 0; col <= columns; col++) {
+      positions.push(...point(row, col))
+      uv.push(col / columns, row / rows)
+    }
   }
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < columns; col++) {
@@ -59,6 +57,7 @@ function surface(rows: number, columns: number, point: (row: number, col: number
   }
   const geo = new BufferGeometry()
   geo.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  geo.setAttribute('uv', new Float32BufferAttribute(uv, 2))
   geo.setIndex(index)
   geo.computeVertexNormals()
   return geo
@@ -72,6 +71,7 @@ function Geometry({ value }: { value: BufferGeometry }) {
 function Cockpit({ frame }: { frame: Airframe }) {
   const glider = frame.profile === 'glider'
   const jumbo = frame.profile === 'b748'
+  const aircraft = visualFor(frame)
   const mesh = useMemo(() => {
     const geometries = []
     for (let pane = 0; pane < 6; pane++) {
@@ -80,13 +80,13 @@ function Cockpit({ frame }: { frame: Airframe }) {
       geometries.push(surface(5, 6, (row, col) => {
         const theta = lerp(first, last, col / 6)
         const side = Math.abs(Math.cos(theta))
-        const from = .068 + .027 * side
-        const to = (glider ? .23 : jumbo ? .088 : .095) + .027 * side
+        const from = .51 * aircraft.nose + .027 * side
+        const to = glider ? .23 + .027 * side : from + (jumbo ? .02 : .027)
         return fuselagePoint(frame, lerp(from, to, row / 5), theta, .016)
       }))
     }
     return geometries
-  }, [frame, glider, jumbo])
+  }, [aircraft, frame, glider, jumbo])
   return <group>{mesh.map((geometry, index) => <mesh key={index}>
     <Geometry value={geometry} />
     <meshPhysicalMaterial color="#10202d" metalness={.2} roughness={.15} clearcoat={.75} side={DoubleSide} />
@@ -109,12 +109,14 @@ const roundedWindow = (() => {
 
 function Windows({ frame, count }: { frame: Airframe; count: number }) {
   const jumbo = frame.profile === 'b748'
+  const doubleDeck = visualFor(frame).body === 'double'
   const doors = useMemo(() => frame.length > 48 ? [.15, .34, .53, .72, .81] : [.15, .48, .78], [frame.length])
   const ref = useRef<InstancedMesh>(null)
   const features = useMemo(() => {
     const windows = []
     for (const side of [-1, 1]) {
-      const rows = jumbo ? [[count, .145, .825, .21], [15, .123, .33, .86]] : [[count, .14, .81, .31]]
+      const rows = doubleDeck ? [[count, .14, .86, -.39], [count - 4, .145, .84, .52]] :
+        jumbo ? [[count, .145, .825, .21], [15, .123, .33, .86]] : [[count, .14, .81, .31]]
       for (const [n, start, end, height] of rows) {
         for (let i = 0; i < n; i++) {
           const t = lerp(start, end, i / (n - 1))
@@ -126,7 +128,7 @@ function Windows({ frame, count }: { frame: Airframe; count: number }) {
       }
     }
     return windows
-  }, [count, doors, frame, jumbo])
+  }, [count, doors, doubleDeck, frame, jumbo])
 
   useLayoutEffect(() => {
     if (!ref.current) return
@@ -149,13 +151,17 @@ function Windows({ frame, count }: { frame: Airframe; count: number }) {
         const halfWidth = frame.width * .095 / frame.length
         const shape = [[-1, -.32], [-1, .46], [-.7, .52], [.7, .52], [1, .46],
           [1, -.32], [.72, -.38], [-.72, -.38], [-1, -.32]]
-        const vertices = shape.map(([t, h]) =>
-          fuselagePoint(frame, door + t * halfWidth, side === 1 ? h : Math.PI - h, .011))
-        for (let i = 1; i < vertices.length; i++) points.push(...vertices[i - 1], ...vertices[i])
+        for (const level of doubleDeck ? [-.45, .47] : [0]) {
+          const vertices = shape.map(([t, h]) => {
+            const theta = level + h * (doubleDeck ? .61 : 1)
+            return fuselagePoint(frame, door + t * halfWidth, side === 1 ? theta : Math.PI - theta, .014)
+          })
+          for (let i = 1; i < vertices.length; i++) points.push(...vertices[i - 1], ...vertices[i])
+        }
       }
     }
     return new Float32BufferAttribute(points, 3)
-  }, [doors, frame])
+  }, [doors, doubleDeck, frame])
   return <>
     <instancedMesh ref={ref} args={[undefined, undefined, features.length]} key={features.length}>
       <shapeGeometry args={[roundedWindow, 3]} />
@@ -200,7 +206,7 @@ function Wing({ stations, single = false, thickness = .11, color = '#b6bdc5', se
   </group>)}</>
 }
 
-function mainWing(frame: Airframe, profile: Profile): Station[] {
+function mainWing(frame: Airframe, profile: AircraftVisual): Station[] {
   const half = frame.span / 2
   const sections = [0, .28, .64, .86, .94, .98, 1]
   const taper = frame.taper
@@ -209,13 +215,25 @@ function mainWing(frame: Airframe, profile: Profile): Station[] {
   const integrated = sections.slice(1).reduce((sum, t, i) => sum + (t - sections[i]) * (chords[i] + chords[i + 1]) / 2, 0)
   const root = frame.area / (frame.span * integrated)
   const height = profile.tip === 'plain' || profile.tip === 'raked' ? 0 : frame.width *
-    (profile.tip === 'blended' ? .48 : profile.tip === 'sharklet' ? .65 : .6)
+    (profile.tip === 'blended' ? .48 : profile.tip === 'sharklet' ? .65 : profile.tip === 'fence' ? .25 : .6)
   return sections.map((fraction, i) => ({
     x: fraction * half, chord: root * chords[i],
-    rise: Math.tan(frame.dihedral * angle) * fraction * half + height * smooth(.9, 1, fraction),
+    rise: Math.tan(frame.dihedral * angle) * fraction * half + height * smooth(.9, 1, fraction) +
+      (frame.profile === 'b788' || frame.profile === 'b789' ? half * .064 * fraction ** 3 : 0),
     offset: Math.tan(frame.sweep * angle) * fraction * half + root *
       (profile.tip === 'raked' ? .23 : .09) * smooth(.84, 1, fraction),
   }))
+}
+
+// Tie engine and flap-fairing placement to the same interpolated wing geometry.
+function wingStationAt(wing: Station[], fraction: number): Station {
+  const x = fraction * wing.at(-1)!.x
+  const next = wing.findIndex(station => station.x >= x)
+  if (next <= 0) return wing[0]
+  const from = wing[next - 1], to = wing[next]
+  const t = (x - from.x) / (to.x - from.x)
+  return { x, chord: lerp(from.chord, to.chord, t), rise: lerp(from.rise, to.rise, t),
+    offset: lerp(from.offset, to.offset, t) }
 }
 
 function Pylon({ height, radius, position }: { height: number; radius: number; position: [number, number, number] }) {
@@ -231,17 +249,24 @@ function Pylon({ height, radius, position }: { height: number; radius: number; p
 const radiusProfile = [[.81, -1.03], [.91, -1.23], [1.01, -1.21], [1.11, -.96], [1.12, -.4],
   [1.04, .32], [.87, .83], [.65, 1.05], [.55, 1.04], [.64, .72], [.78, -.62], [.81, -1.03]]
 
-function Engine({ radius, position, flat }: { radius: number; position: [number, number, number]; flat: boolean }) {
+function Engine({ radius, position, flat, chevrons }: {
+  radius: number; position: [number, number, number]; flat: boolean; chevrons: boolean
+}) {
   const shell = useMemo(() => {
-    const shape = new LatheGeometry(radiusProfile.map(([r, z]) => new Vector2(r, z)), 44)
+    const shape = new LatheGeometry(radiusProfile.map(([r, z]) => new Vector2(r, z)), 72)
     shape.rotateX(Math.PI / 2)
-    if (flat) {
-      const p = shape.attributes.position
-      for (let i = 0; i < p.count; i++) if (p.getY(i) < -.68) p.setY(i, -.68 + .28 * (p.getY(i) + .68))
-      shape.computeVertexNormals()
+    const positions = shape.attributes.position
+    for (let i = 0; i < positions.count; i++) {
+      const y = positions.getY(i), z = positions.getZ(i)
+      if (flat && y < -.68) positions.setY(i, -.68 + .28 * (y + .68))
+      if (chevrons && z >= .8) {
+        const theta = Math.atan2(y, positions.getX(i))
+        positions.setZ(i, z - .13 * (1 - Math.cos(12 * theta)) * smooth(.78, 1.05, z))
+      }
     }
+    shape.computeVertexNormals()
     return shape
-  }, [flat])
+  }, [chevrons, flat])
   return <group position={position} scale={radius}>
     <mesh><Geometry value={shell} />
       <meshPhysicalMaterial color="#adb5bf" metalness={.55} roughness={.27} clearcoat={.42} side={DoubleSide} />
@@ -262,12 +287,16 @@ function Engine({ radius, position, flat }: { radius: number; position: [number,
 }
 
 export function Aircraft({ config: frame }: { config: Airframe }) {
-  const profile = profiles[frame.profile ?? 'generic']
+  const reference = aircraftReference(frame.profile)
+  const profile = visualFor(frame)
+  const twinProp = profile.body === 'turboprop'
+  const splitTip = profile.tip === 'split' || profile.tip === 'fence'
+  const dreamliner = frame.profile === 'b788' || frame.profile === 'b789'
   const wing = useMemo(() => mainWing(frame, profile), [frame, profile])
   const body = useMemo(() => surface(88, 64, (row, col) =>
     fuselagePoint(frame, row / 88, col * tau / 64)), [frame])
   const wide = frame.width
-  const wingY = -wide * .27
+  const wingY = wide * (twinProp ? .39 : -.27)
   const wingZ = axial(profile.wingStation, frame.length)
   const root = wing[0].chord
   const stab = useMemo(() => [
@@ -283,27 +312,40 @@ export function Aircraft({ config: frame }: { config: Airframe }) {
     { x: finHeight, chord: root * .105, rise: 0, offset: root * .59 },
   ], [finHeight, root])
   const nacelle = wide * profile.nacelle
+  const lowerTip = useMemo(() => {
+    const start = wing[4], end = wing.at(-1)!
+    return [start, { ...end, chord: end.chord * 1.5,
+      rise: start.rise - wide * (profile.tip === 'fence' ? .25 : .44) }]
+  }, [profile.tip, wide, wing])
   return <group>
     <mesh><Geometry value={body} />
       <meshPhysicalMaterial color="#e6e7e5" roughness={.31} metalness={.2} clearcoat={.5} clearcoatRoughness={.27} />
     </mesh>
     <Cockpit frame={frame} />
+    {reference && <Livery frame={frame} maker={reference.maker} variant={reference.variant} />}
     {profile.cabin > 0 && <Windows frame={frame} count={profile.cabin} />}
-    <group position={[0, wingY, wingZ]}><Wing stations={wing} seams /></group>
+    <group position={[0, wingY, wingZ]}>
+      <Wing stations={wing} seams />
+      {splitTip && <Wing stations={lowerTip} thickness={.12} />}
+      {reference && !twinProp && <WingFairings wing={wing} width={wide} />}
+    </group>
     <group position={[0, wide * .36, axial(.835, frame.length)]} rotation={[0, 0, Math.PI / 2]}>
       <Wing stations={fin} color="#48525f" single />
     </group>
-    <group position={[0, wide * .28, axial(.865, frame.length)]}>
+    <group position={[0, twinProp ? wide * .36 + finHeight * .93 : wide * .28,
+      axial(twinProp ? .835 : .865, frame.length) + (twinProp ? root * .55 : 0)]}>
       <Wing stations={stab} seams />
     </group>
     {profile.engineStations.flatMap(fraction => [-1, 1].map(side => {
-      const x = fraction * frame.span / 2 * side
-      const y = wingY + Math.tan(frame.dihedral * angle) * Math.abs(x)
-      const z = wingZ + Math.tan(frame.sweep * angle) * Math.abs(x)
+      const station = wingStationAt(wing, fraction)
+      const x = station.x * side
+      const y = wingY + station.rise
+      const z = wingZ + station.offset
       const pylonHeight = nacelle * 1.05
+      if (twinProp) return <Turboprop key={x} position={[x, y - nacelle * .4, z - nacelle * .55]} radius={nacelle} />
       return <group key={x}>
         <Pylon height={pylonHeight} radius={nacelle} position={[x, y, z - nacelle * .16]} />
-        <Engine radius={nacelle} flat={frame.profile === 'b738'}
+        <Engine radius={nacelle} flat={frame.profile === 'b738'} chevrons={dreamliner}
           position={[x, y - pylonHeight - nacelle * .62, z - nacelle * .70]} />
       </group>
     }))}
@@ -315,5 +357,75 @@ export function Aircraft({ config: frame }: { config: Airframe }) {
           emissive={side === 1 ? '#157c49' : '#a52020'} emissiveIntensity={.48} />
       </mesh>
     })}
+  </group>
+}
+
+function Livery({ frame, maker, variant }: { frame: Airframe; maker: string; variant: string }) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1536
+    canvas.height = 176
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#14283c'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.font = 'bold 116px system-ui'
+    ctx.fillText(`${maker} ${variant}`.toUpperCase(), 768, 83, 1480)
+    ctx.fillStyle = '#9b2331'
+    ctx.fillRect(170, 151, 1196, 8)
+    const map = new CanvasTexture(canvas)
+    map.colorSpace = SRGBColorSpace
+    map.anisotropy = 4
+    return map
+  }, [maker, variant])
+  useEffect(() => () => texture.dispose(), [texture])
+  const decks = visualFor(frame).body === 'double'
+  const patches = useMemo(() => [-1, 1].map(side => {
+    return surface(12, 56, (row, column) => {
+      const u = column / 56
+      const t = lerp(.16, .527, side === 1 ? 1 - u : u)
+      const theta = lerp(decks ? -.22 : -.43, .095, row / 12)
+      return fuselagePoint(frame, t, side === 1 ? theta : Math.PI - theta, Math.max(.048, frame.width * .011))
+    })
+  }), [decks, frame])
+  return <>{patches.map((patch, i) => <mesh key={i}>
+    <Geometry value={patch} />
+    <meshBasicMaterial map={texture} alphaTest={.33} alphaToCoverage side={DoubleSide} polygonOffset
+      polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
+  </mesh>)}</>
+}
+
+function WingFairings({ wing, width }: { wing: Station[]; width: number }) {
+  return <group>
+    {[-1, 1].flatMap(side => [.23, .41, .59].map(fraction => {
+      const { x, chord, rise, offset } = wingStationAt(wing, fraction)
+      return <mesh key={x * side} scale={[width * .044, width * .065, chord * .32]}
+        position={[x * side, rise - width * .035, offset + chord * .56]}>
+        <sphereGeometry args={[1, 16, 10]} />
+        <meshStandardMaterial color="#a2acb5" roughness={.41} metalness={.29} />
+      </mesh>
+    }))}
+  </group>
+}
+
+function Turboprop({ position, radius }: { position: [number, number, number]; radius: number }) {
+  return <group position={position}>
+    <mesh scale={[radius * .73, radius * .70, radius * 2.12]}>
+      <sphereGeometry args={[1, 24, 16]} />
+      <meshPhysicalMaterial color="#b8bdc6" metalness={.42} roughness={.3} clearcoat={.4} />
+    </mesh>
+    <group position={[0, 0, -radius * 1.94]}>
+      {Array.from({ length: 6 }, (_, i) => <group key={i} rotation={[0, 0, i * tau / 6]}>
+        <mesh position={[.98, -.125, 0]} rotation={[0, -.14, -.15]} scale={[.982, .115, .044]}>
+          <sphereGeometry args={[1, 16, 10]} /><meshStandardMaterial color="#202631" roughness={.43} />
+        </mesh>
+        <mesh position={[1.84, -.255, -.126]} scale={[.108, .063, .037]}>
+          <sphereGeometry args={[1, 10, 8]} /><meshStandardMaterial color="#d6dbe0" roughness={.42} />
+        </mesh>
+      </group>)}
+      <mesh scale={[radius * .36, radius * .36, radius * .57]}>
+        <sphereGeometry args={[1, 20, 12]} /><meshStandardMaterial color="#bac5cf" metalness={.5} roughness={.24} />
+      </mesh>
+    </group>
   </group>
 }

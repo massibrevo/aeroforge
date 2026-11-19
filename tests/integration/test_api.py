@@ -75,7 +75,20 @@ def test_manufacturer_presets_preserve_geometry_and_legacy_configs():
         "Boeing 747-8 Intercontinental": ("b748", 68.4, 76.3),
         "Airbus A320neo": ("a20n", 35.8, 37.57),
         "Airbus A350-900": ("a359", 64.75, 66.8),
+        "Boeing 737 MAX 8": ("b38m", 35.9, 39.5),
+        "Boeing 777-300ER": ("b77w", 64.8, 73.9),
+        "Boeing 787-8": ("b788", 60.12, 56.72),
+        "Boeing 787-9": ("b789", 60.12, 62.81),
+        "Airbus A220-300": ("a223", 35.1, 38.7),
+        "Airbus A319neo": ("a19n", 35.8, 33.84),
+        "Airbus A321neo": ("a21n", 35.8, 44.51),
+        "Airbus A330-900": ("a339", 64, 63.69),
+        "Airbus A350-1000": ("a35k", 64.75, 73.78),
+        "Airbus A380-800": ("a388", 79.75, 72.73),
+        "Embraer E195-E2": ("e295", 35.12, 41.6),
+        "ATR 72-600": ("at76", 27.05, 27.17),
     }
+    assert len(presets) == len(reference) + 3
     for name, expected in reference.items():
         config = presets[name]
         assert (config["profile"], config["span"], config["length"]) == expected

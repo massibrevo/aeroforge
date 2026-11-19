@@ -3,9 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { Activity, ArrowDownToLine, ArrowRight, Atom, Box, FlaskConical, Gauge,
   LayoutGrid, Library, Orbit, Plane, Radar, ShieldAlert } from 'lucide-react'
 import { api, defaultFlight, dimensions, fallback, fmt, post, save, useData,
-  type Airframe, type AirframeProfile, type Dataset, type Flight, type Physics, type RunSummary, type Status } from './api'
+  type Airframe, type Dataset, type Flight, type Physics, type RunSummary, type Status } from './api'
 import { Message, Panel, Range, Stat } from './components'
 import { Scene } from './Scene'
+import { aircraftReference } from './catalog'
 import { PhysicsLab } from './PhysicsLab'
 import { EngineLab, ExperimentLab, Sources } from './Research'
 import '@fontsource-variable/public-sans'
@@ -79,25 +80,14 @@ function Overview({ frame, preset, physics, status }: {
 
 const sliders: { key: Exclude<keyof Airframe, 'version' | 'profile'>; label: string; min: number; max: number; step: number; unit?: string }[] = [
   { key: 'span', label: 'Wing span', min: 12, max: 80, step: .05, unit: 'm' },
-  { key: 'area', label: 'Wing area', min: 25, max: 620, step: 1, unit: 'm²' },
+  { key: 'area', label: 'Wing area', min: 25, max: 900, step: .1, unit: 'm²' },
   { key: 'taper', label: 'Taper ratio', min: .2, max: 1, step: .01 },
-  { key: 'sweep', label: 'Quarter-chord sweep', min: 0, max: 40, step: 1, unit: '°' },
+  { key: 'sweep', label: 'Quarter-chord sweep', min: 0, max: 40, step: .5, unit: '°' },
   { key: 'dihedral', label: 'Dihedral', min: 0, max: 12, step: .5, unit: '°' },
   { key: 'length', label: 'Fuselage length', min: 12, max: 82, step: .01, unit: 'm' },
-  { key: 'width', label: 'Fuselage diameter', min: 1.3, max: 7, step: .01, unit: 'm' },
+  { key: 'width', label: 'Fuselage diameter', min: 1.3, max: 8, step: .01, unit: 'm' },
   { key: 'tail', label: 'Tail scale', min: .55, max: 1.45, step: .01 },
 ]
-
-const manufacturerSources: Partial<Record<AirframeProfile, { summary: string; link: string }>> = {
-  b738: { summary: 'Twin-engine narrow-body · blended winglets',
-    link: 'https://www.boeing.com/commercial/737ng/737-next-generation-design-highlights' },
-  b748: { summary: 'Four-engine wide-body · upper deck and raked tips',
-    link: 'https://www.boeing.com/content/dam/boeing/boeingdotcom/company/about_bca/startup/pdf/historical/747-8I_-_passenger.pdf' },
-  a20n: { summary: 'Twin-engine narrow-body · sharklets',
-    link: 'https://www.aircraft.airbus.com/en/aircraft/a320-family/a320neo' },
-  a359: { summary: 'Twin-engine wide-body · blended wing tips',
-    link: 'https://www.aircraft.airbus.com/en/aircraft/a350/a350-900' },
-}
 
 function Studio({ frame, preset, selected, update }: {
   frame: Airframe; preset: string; selected: string; update: (a: Airframe, name: string, base?: string) => void
@@ -106,8 +96,12 @@ function Studio({ frame, preset, selected, update }: {
   const [error, setError] = useState('')
   const [importing, setImporting] = useState(false)
   const d = dimensions(frame)
-  const source = manufacturerSources[frame.profile ?? 'generic']
-  const available = Object.entries(presets.data ?? { Regional: fallback })
+  const source = aircraftReference(frame.profile)
+  const groups = new Map<string, string[]>()
+  for (const [name, candidate] of Object.entries(presets.data ?? { Regional: fallback })) {
+    const maker = aircraftReference(candidate.profile)?.maker ?? 'Concept aircraft'
+    groups.set(maker, [...(groups.get(maker) ?? []), name])
+  }
   return <>
     <Header kicker="AIRFRAME GEOMETRY" title="Aircraft Studio"
       description="Explore commercial aircraft geometry or build your own configuration."
@@ -118,8 +112,8 @@ function Studio({ frame, preset, selected, update }: {
           tag={source ? 'REFERENCE GEOMETRY' : 'CONCEPT GEOMETRY'} className="viewport studio-viewport">
           <Scene airframe={frame} controls />
           {source && <div className="hangar-source">
-            <span>{source.summary}</span>
-            <a className="inline" href={source.link} target="_blank" rel="noreferrer">Manufacturer dimensions <ArrowRight size={14} /></a>
+            <span>{source.visual.engineStations.length * 2} × {source.reference.powerplant}</span>
+            <a className="inline" href={source.sources[0]} target="_blank" rel="noreferrer">Manufacturer dimensions <ArrowRight size={14} /></a>
           </div>}
         </Panel>
         <div className="stats three">
@@ -135,16 +129,25 @@ function Studio({ frame, preset, selected, update }: {
             <label>Aircraft preset<select aria-label="Preset" value={selected} disabled={!presets.data} onChange={e => {
               update(presets.data![e.target.value], e.target.value)
             }}>
-              <optgroup label="Production aircraft">
-                {available.filter(([, a]) => manufacturerSources[a.profile ?? 'generic']).map(([name]) => <option key={name}>{name}</option>)}
-              </optgroup>
-              <optgroup label="Concept aircraft">
-                {available.filter(([, a]) => !manufacturerSources[a.profile ?? 'generic']).map(([name]) => <option key={name}>{name}</option>)}
-              </optgroup>
+              {[...groups].map(([maker, names]) => <optgroup key={maker} label={maker}>
+                {names.map(name => <option key={name}>{name}</option>)}
+              </optgroup>)}
             </select></label>
             <button className="button" disabled={!presets.data} onClick={() => update(presets.data![selected], selected)}>Reset preset</button>
           </div>
-          <p className="muted">Reference presets use published span and length. Wing details and performance inputs are illustrative.</p>
+          {source && <details className="aircraft-reference">
+            <summary>Manufacturer specifications</summary>
+            <dl>
+              <dt>Published wingspan</dt><dd>{fmt(source.geometry.span, 2)} m</dd>
+              <dt>Published length</dt><dd>{fmt(source.geometry.length, 2)} m</dd>
+              {source.reference.height !== null && <><dt>Published height</dt><dd>{fmt(source.reference.height, 2)} m</dd></>}
+              <dt>Reference max take-off mass</dt><dd>{fmt(source.reference.mtow, 0)} kg</dd>
+              <dt>Wing reference area</dt><dd>{fmt(source.geometry.area, 1)} m² · {source.reference.wingAreaPublished ? 'published' : 'model estimate'}</dd>
+            </dl>
+            <div className="aircraft-sources">{source.sources.map((url, index) => <a key={url} href={url} className="inline" target="_blank"
+              rel="noreferrer">Manufacturer reference {index + 1} <ArrowRight size={13} /></a>)}</div>
+            <p>Reference figures vary by configuration. The flight solver uses the selected geometry and independent flight inputs.</p>
+          </details>}
           {sliders.map(({ key, label, ...options }) => <Range key={key} name={label} value={frame[key]} {...options}
             onChange={value => update({ ...frame, [key]: value }, 'Custom')} />)}
           <details className="wing-details"><summary>Equivalent wing chords</summary>
@@ -160,7 +163,7 @@ function Studio({ frame, preset, selected, update }: {
                 if (value?.version !== 1) throw new Error('Expected airframe schema version 1.')
                 const result = await post<{config: Airframe}>('/config/validate', value)
                 const matching = result.config.profile && result.config.profile !== 'generic' ?
-                  available.find(([, candidate]) => candidate.profile === result.config.profile)?.[0] : undefined
+                  Object.entries(presets.data ?? {}).find(([, candidate]) => candidate.profile === result.config.profile)?.[0] : undefined
                 update(result.config, 'Imported', matching)
               } catch (e) { setError(String((e as Error).message)) } finally { setImporting(false) }
             }} />

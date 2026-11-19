@@ -1,9 +1,10 @@
 """Versioned geometry and bounded illustrative aerodynamic inputs."""
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Literal
 
 from .atmosphere import CEILING, G, atmosphere
+from .catalog import CATALOG
 
 
 class Contract(BaseModel):
@@ -12,15 +13,22 @@ class Contract(BaseModel):
 
 class Airframe(Contract):
     version: Literal[1] = 1
-    profile: Literal["generic", "glider", "b738", "b748", "a20n", "a359"] = "generic"
+    profile: str = "generic"
     span: float = Field(28, ge=12, le=80)
-    area: float = Field(78, ge=25, le=620)
+    area: float = Field(78, ge=25, le=900)
     taper: float = Field(0.36, ge=0.2, le=1)
     sweep: float = Field(22, ge=0, le=40)
     dihedral: float = Field(5, ge=0, le=12)
     length: float = Field(25, ge=12, le=82)
-    width: float = Field(2.8, ge=1.3, le=7)
+    width: float = Field(2.8, ge=1.3, le=8)
     tail: float = Field(1, ge=0.55, le=1.45)
+
+    @field_validator("profile")
+    @classmethod
+    def known_profile(cls, profile: str) -> str:
+        if profile not in ("generic", "glider") and profile not in CATALOG:
+            raise ValueError("Unknown aircraft profile.")
+        return profile
 
     def dimensions(self):
         root = 2 * self.area / (self.span * (1 + self.taper))
