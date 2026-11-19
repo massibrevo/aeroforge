@@ -16,7 +16,7 @@ reference values within 0.02% relative error.
 
 The trapezoidal planform uses span b, area S and taper λ. Root chord
 `cr = 2S/[b(1+λ)]`, tip chord `ct = λcr`, and aspect ratio `AR = b²/S`.
-The displayed surface uses quarter-chord sweep and dihedral in degrees.
+The mesh uses piecewise cambered sections normalized to the selected planform area. Sweep and dihedral shape the mesh.
 Fuselage and tail controls change the visual geometry. The force model uses
 the supplied wing area and aspect ratio.
 

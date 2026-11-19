@@ -1,6 +1,6 @@
 # AeroForge
 
-**Design. Simulate. Diagnose.** AeroForge is an open-source, CPU-first aircraft engineering and turbofan prognostics workbench. Design a parametric airframe, integrate a longitudinal flight segment, and compare RUL models on synthetic or NASA C-MAPSS FD001 trajectories.
+**Design. Simulate. Diagnose.** AeroForge is an open-source, CPU-first aircraft engineering and turbofan prognostics workbench. Design a parametric airframe or load a [real-aircraft geometry preset](docs/AIRFRAME_PRESETS.md), integrate a longitudinal flight segment, and compare RUL models on synthetic or NASA C-MAPSS FD001 trajectories.
 
 **Research and education only — not for operational flight or maintenance decisions.** AeroForge is an independent project. NASA has no affiliation with or endorsement of AeroForge.
 

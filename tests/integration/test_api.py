@@ -66,3 +66,28 @@ def test_training_api(monkeypatch, tmp_path):
     )
     assert prediction.status_code == 200
     assert prediction.json()["rul"] >= 0
+
+
+def test_manufacturer_presets_preserve_geometry_and_legacy_configs():
+    presets = client.get("/api/config/presets").json()
+    reference = {
+        "Boeing 737-800": ("b738", 35.8, 39.5),
+        "Boeing 747-8 Intercontinental": ("b748", 68.4, 76.3),
+        "Airbus A320neo": ("a20n", 35.8, 37.57),
+        "Airbus A350-900": ("a359", 64.75, 66.8),
+    }
+    for name, expected in reference.items():
+        config = presets[name]
+        assert (config["profile"], config["span"], config["length"]) == expected
+        verified = client.post("/api/config/validate", json=config)
+        assert verified.status_code == 200
+        assert verified.json()["config"] == config
+        computed = client.post("/api/physics/compute", json={"airframe": config}).json()
+        assert computed["q"] * config["area"] * 0.45 == computed["lift"]
+
+    previous = {key: value for key, value in presets["Regional"].items() if key != "profile"}
+    verified = client.post("/api/config/validate", json=previous)
+    assert verified.json()["config"] == presets["Regional"]
+    assert (
+        client.post("/api/config/validate", json={**previous, "profile": "unknown"}).status_code == 422
+    )

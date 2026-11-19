@@ -12,13 +12,14 @@ class Contract(BaseModel):
 
 class Airframe(Contract):
     version: Literal[1] = 1
-    span: float = Field(28, ge=12, le=42)
-    area: float = Field(78, ge=25, le=160)
+    profile: Literal["generic", "glider", "b738", "b748", "a20n", "a359"] = "generic"
+    span: float = Field(28, ge=12, le=80)
+    area: float = Field(78, ge=25, le=620)
     taper: float = Field(0.36, ge=0.2, le=1)
     sweep: float = Field(22, ge=0, le=40)
     dihedral: float = Field(5, ge=0, le=12)
-    length: float = Field(25, ge=12, le=46)
-    width: float = Field(2.8, ge=1.3, le=6)
+    length: float = Field(25, ge=12, le=82)
+    width: float = Field(2.8, ge=1.3, le=7)
     tail: float = Field(1, ge=0.55, le=1.45)
 
     def dimensions(self):

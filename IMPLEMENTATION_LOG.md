@@ -1,6 +1,11 @@
 # Implementation log
 
-## Release checks
+## Aircraft Studio update · 2026-11-19
+
+- Added four manufacturer-referenced airframe presets with backward-compatible JSON v1 import. The render includes fuselage profiles, swept and cambered wings, cabin and cockpit glazing, nacelles, intake fans and view shortcuts.
+- Verified all four presets, camera controls, JSON round-trip and downstream flight calculation in Chromium. All 19 Python tests, lint, type checking, and the production build passed. The models are visual approximations with published span and overall length.
+
+## Initial release checks
 
 - Bootstrap completed with Python 3.12 and Node 22 on macOS arm64. Neither service requires an API key.
 - `python3.12 scripts/verify.py` passed Ruff lint and format, 18 Python tests, TypeScript and Vite build, real loopback API health, and the Chrome/Playwright flow. Browser checks included all six routes, responsive layout, updated span and backend force calculation, integrated climb with playhead, synthetic and real FD001 views, a missing-data UI scenario, and training through the nonblocking API.

@@ -38,12 +38,41 @@ try {
   const before = await aspect.textContent()
   const span = page.getByRole('slider', { name: 'Wing span' })
   await span.press('ArrowRight')
+  await span.press('ArrowRight')
   assert.notEqual(await aspect.textContent(), before)
   await page.getByText('28.1 m span · 78.0 m²').waitFor()
   await page.locator('canvas').waitFor()
   const download = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export JSON' }).click()
   assert.equal((await download).suggestedFilename(), 'aeroforge-airframe-v1.json')
+  const preset = page.getByRole('combobox', { name: 'Preset' })
+  await preset.selectOption('Boeing 747-8 Intercontinental')
+  await page.getByText('68.4 m span · 550.0 m²').waitFor()
+  for (const view of ['Front', 'Side', 'Top']) {
+    const button = page.getByRole('button', { name: view, exact: true })
+    await button.click()
+    assert.equal(await button.getAttribute('aria-pressed'), 'true')
+  }
+  const jumboExport = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export JSON' }).click()
+  const file = await (await jumboExport).path()
+  await preset.selectOption('Regional')
+  await page.locator('input[type=file]').setInputFiles(file)
+  await page.getByText('68.4 m span · 550.0 m²').waitFor()
+  assert.equal(await preset.inputValue(), 'Boeing 747-8 Intercontinental')
+  await page.getByRole('button', { name: 'Reset preset' }).click()
+  await page.getByRole('button', { name: 'Perspective', exact: true }).click()
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: 'artifacts/aeroforge-747.png', fullPage: true })
+  for (const [name, spanText] of [
+    ['Boeing 737-800', '35.8 m span · 125.0 m²'],
+    ['Airbus A320neo', '35.8 m span · 123.0 m²'],
+    ['Airbus A350-900', '64.8 m span · 443.0 m²'],
+  ]) {
+    await preset.selectOption(name)
+    await page.getByText(spanText).waitFor()
+  }
+  await preset.selectOption('Regional')
   await nav.getByRole('link', { name: 'Flight Physics' }).click()
   const lift = page.locator('.stat').filter({ has: page.getByText('Lift', { exact: true }) }).locator('strong')
   await page.waitForFunction(() => ![...document.querySelectorAll('.stat')].find(e => e.innerText.startsWith('Lift\n'))?.innerText.includes('—'))
@@ -87,7 +116,7 @@ try {
   await nav.getByRole('link', { name: 'Mission Control' }).click()
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
   assert.deepEqual(errors, [])
-  console.log('PASS Browser E2E: six routes, configuration, live physics, trajectory, fleets, comparison, sources, no runtime errors.')
+  console.log('PASS Browser E2E: six routes, production presets, camera views, JSON round-trip, live physics, trajectory, fleets, comparison, sources, no runtime errors.')
 } finally {
   await browser.close()
 }

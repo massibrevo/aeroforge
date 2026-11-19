@@ -23,7 +23,7 @@ select { width: 100%; min-height: 40px; font-size: .82rem; }
 .offline i { background: var(--amber); box-shadow: none; }
 main { padding: 30px; max-width: 1510px; margin: auto; display: grid; gap: 17px; outline: none; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; padding: 12px 0 13px; }
-.kicker, .tag, .scene-caption, .mono, code { font-family: var(--mono); }
+.kicker, .tag, .mono, code { font-family: var(--mono); }
 .kicker { color: var(--blue); font-size: .69rem; letter-spacing: .14em; }
 .page-head h1 { font-family: var(--display); text-transform: uppercase; font-size: clamp(2.85rem, 5vw, 4.55rem); margin: 4px 0 4px; line-height: .94; letter-spacing: .005em; font-weight: 700; }
 .page-head p { margin: 8px 0 0; color: var(--muted); font-size: .93rem; }
@@ -46,8 +46,7 @@ main { padding: 30px; max-width: 1510px; margin: auto; display: grid; gap: 17px;
 .scene { position: relative; height: 346px; background: radial-gradient(ellipse at 52% 44%,#233954,#171f2f 62%,#0f1319 98%); min-width: 0; }
 .studio-viewport .scene { height: 435px; }
 .scene canvas { display: block; touch-action: none; }
-.scene-caption, .scene-help { position: absolute; pointer-events: none; bottom: 10px; color: #c5d5e4; font-size: .59rem; background: #111d2bd9; padding: 4px 6px; border-radius: 4px; }
-.scene-caption { left: 10px; }
+.scene-help { position: absolute; pointer-events: none; bottom: 10px; color: #c5d5e4; font-size: .59rem; background: #111d2bd9; padding: 4px 6px; border-radius: 4px; }
 .scene-help { right: 10px; }
 .modules { display: grid; padding: 4px 12px 6px; }
 .modules a { display: flex; align-items: center; gap: 10px; min-height: 65px; border-bottom: 1px solid var(--border); padding: 7px 0; }
@@ -140,7 +139,6 @@ code { overflow-wrap: anywhere; }
 .hero-copy .button { min-height: 45px; padding-inline: 13px; }
 .hero-preview { position: relative; min-width: 0; }
 .hero-preview .scene { height: 100%; min-height: 369px; background: radial-gradient(ellipse at 55% 42%,#345c8a,#1b2e4b 58%,#111b2a 85%); }
-.hero-preview .scene-caption { left: auto; right: 10px; bottom: 32px; }
 .hero-config { position: absolute; top: 13px; left: 18%; z-index: 2; display: flex; align-items: center; gap: 6px; pointer-events: none; color: #dbe9fb; font: 500 .71rem var(--mono); }
 .hero-config svg { color: #a5caff; }
 .hero-config small { color: #b4c4dc; }
@@ -172,4 +170,59 @@ code { overflow-wrap: anywhere; }
 }
 @media (max-width: 670px) {
   .overview-grid { grid-template-columns: minmax(0,1fr); }
+}
+
+/* Monochrome hangar and flight controls */
+:root { background: #08090b; --border: #34363a; --panel: #121418; --muted: #b4b9c2; }
+.global-nav { background: #050506; border-color: #292b30; }
+.brand { letter-spacing: .08em; }
+.brand > span > span { color: #edf0f3; }
+.brand-mark { background: #24262c; }
+.global-nav nav a { color: #c5c8d0; }
+.global-nav nav a:hover, .global-nav nav [aria-current=page] { border-bottom-color: #f3f4f7; }
+.toolbar { background: #15171c; color: #c5cbd5; border-color: #34363d; }
+.page-head { border-bottom: 1px solid #383a40; padding-bottom: 18px; }
+.page-head h1 { font-size: clamp(3.1rem, 6vw, 5.8rem); }
+.kicker { color: #b9c2d1; }
+.command-hero { grid-template-columns: minmax(0, .87fr) minmax(0, 1.55fr); min-height: 460px; background: #08090b; border-color: #383b41; }
+.command-hero::before { background: linear-gradient(90deg,#090a0d 2%,#090a0d 27%,#090a0de9 35%,#090a0d18 59%,transparent 67%); }
+.hero-copy h1 { max-width: 7ch; }
+.hero-copy .kicker { color: #d2d8e1; }
+.hero-copy .button { background: #0e1117; border-color: #c1c6d0; text-transform: uppercase; border-radius: 1px; }
+.hero-copy .button:hover { background: #e5e9ef; color: #0a0b0d; }
+.hero-preview .scene { min-height: 460px; background: radial-gradient(ellipse at 58% 32%, #484b53 0%, #282b31 44%, #15171c 73%, #0a0b0e); }
+.hero-config { color: #f0f2f6; top: 15px; }
+.hero-config svg, .hero-config small { color: #cdd2dd; }
+.scene { background: radial-gradient(ellipse at 55% 35%, #3b3e46 0%, #22242b 53%, #0c0e11 100%); }
+.scene-render { position: absolute; inset: 0; }
+.scene-dimensions, .scene-help { background: #0f1118e8; border: 1px solid #454b56; border-radius: 0; color: #e0e5ef; font-family: var(--mono); }
+.scene-views { position: absolute; bottom: 10px; left: 10px; display: flex; }
+.scene-views button { color: #e1e5eb; min-height: 32px; padding: 5px 8px; background: #0c0e12eb; border-radius: 0; border-color: #4e535e; font: 500 .64rem var(--mono); text-transform: uppercase; }
+.scene-views button + button { border-left: 0; }
+.scene-views button[aria-pressed=true] { background: #e9ebef; color: #15181c; }
+.hangar-grid { display: grid; grid-template-columns: minmax(0, 2.55fr) minmax(265px, 1fr); gap: 16px; align-items: start; }
+.studio-viewport .scene { height: clamp(390px, 45vw, 645px); }
+.studio-viewport .panel-top { min-height: 58px; }
+.studio-viewport h2 { font-family: var(--display); text-transform: uppercase; font-size: clamp(1.25rem, 2.7vw, 1.85rem); letter-spacing: .035em; }
+.hangar-source { border-top: 1px solid #373a41; padding: .75rem .9rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; color: #bbc1ca; font-size: .77rem; }
+.preset-picker { display: grid; gap: 7px; padding-bottom: 3px; }
+.preset-picker label { display: grid; gap: 7px; font-size: .77rem; color: #d3dbe6; }
+.preset-picker select { min-width: 0; font-size: .82rem; border-color: #777e89; }
+.preset-picker .button { justify-self: start; }
+.wing-details { border-top: 1px solid var(--border); padding-top: 10px; }
+.stat { background: #14161b; border-top-color: #686f7c; }
+@media (max-width: 920px) {
+  .hangar-grid { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 760px) {
+  .command-hero { grid-template-columns: 1fr; min-height: 0; }
+  .hero-copy h1 { max-width: initial; }
+  .hero-preview .scene { min-height: 280px; height: 280px; }
+  .hero-config { top: 12px; }
+}
+@media (max-width: 540px) {
+  .studio-viewport .scene { height: 315px; }
+  .studio-viewport .scene-help { display: none; }
+  .hero-preview .scene-dimensions { top: auto; left: 10px; right: auto; bottom: 10px; }
+  .hero-preview .scene-help { font-size: .5rem; }
 }

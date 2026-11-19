@@ -40,8 +40,9 @@ export function save(filename: string, value: string, type = 'application/json')
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+export type AirframeProfile = "generic" | "glider" | "b738" | "b748" | "a20n" | "a359"
 export type Airframe = {
-  version: 1; span: number; area: number; taper: number; sweep: number;
+  version: 1; profile?: AirframeProfile; span: number; area: number; taper: number; sweep: number;
   dihedral: number; length: number; width: number; tail: number
 }
 export const fallback: Airframe = { version: 1, span: 28, area: 78, taper: .36,

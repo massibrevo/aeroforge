@@ -105,8 +105,52 @@ def sources():
 def presets():
     return {
         "Regional": Airframe(),
-        "Glider": Airframe(span=33, area=44, length=17, width=1.6, sweep=4, taper=0.5, dihedral=8),
+        "Glider": Airframe(
+            profile="glider", span=33, area=44, length=17, width=1.6, sweep=4, taper=0.5, dihedral=8
+        ),
         "Transport": Airframe(span=38, area=135, length=37, width=4.3, sweep=29, tail=1.2),
+        "Boeing 737-800": Airframe(
+            profile="b738",
+            span=35.8,
+            length=39.5,
+            width=3.76,
+            area=125,
+            sweep=25,
+            taper=0.26,
+            dihedral=6,
+        ),
+        "Boeing 747-8 Intercontinental": Airframe(
+            profile="b748",
+            span=68.4,
+            length=76.3,
+            width=6.5,
+            area=550,
+            sweep=37,
+            taper=0.25,
+            dihedral=6,
+            tail=1.1,
+        ),
+        "Airbus A320neo": Airframe(
+            profile="a20n",
+            span=35.8,
+            length=37.57,
+            width=3.95,
+            area=123,
+            sweep=25,
+            taper=0.29,
+            dihedral=5,
+        ),
+        "Airbus A350-900": Airframe(
+            profile="a359",
+            span=64.75,
+            length=66.8,
+            width=5.96,
+            area=443,
+            sweep=32,
+            taper=0.23,
+            dihedral=5,
+            tail=0.98,
+        ),
     }
 
 

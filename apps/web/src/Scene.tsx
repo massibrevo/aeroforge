@@ -1,8 +1,10 @@
-import { Component, useEffect, useMemo, useRef, type ReactNode } from 'react'
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { BufferGeometry, DoubleSide, Float32BufferAttribute, Vector3 } from 'three'
+import { BufferGeometry, CanvasTexture, PMREMGenerator, Vector3 } from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { dimensions, type Airframe, type Sample } from './api'
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+import { Aircraft } from './Aircraft'
+import { type Airframe, type Sample } from './api'
 
 class GraphicsBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
@@ -10,75 +12,86 @@ class GraphicsBoundary extends Component<{ children: ReactNode }, { failed: bool
   render() { return this.state.failed ? <div className="empty">WebGL is unavailable on this device.</div> : this.props.children }
 }
 
-function Orbit() {
-  const { camera, gl, invalidate } = useThree()
+const views = {
+  Perspective: [1.06, .61, -1.38],
+  Front: [0, .13, -1.88],
+  Side: [1.82, .16, 0],
+  Top: [0, 1.85, -.014],
+} as const
+type View = keyof typeof views
+
+function Orbit({ view, revision }: { view: View; revision: number }) {
+  const { camera, gl, invalidate, size } = useThree()
+  const orbit = useRef<OrbitControls>(null)
   useEffect(() => {
-    const controls = new OrbitControls(camera, gl.domElement)
-    controls.minDistance = 9
-    controls.maxDistance = 110
-    controls.maxPolarAngle = Math.PI * .5
-    controls.enablePan = true
     const canvas = gl.domElement
+    const controls = new OrbitControls(camera, canvas)
+    orbit.current = controls
+    controls.minDistance = 19
+    controls.maxDistance = 175
+    controls.maxPolarAngle = Math.PI * .49
     canvas.tabIndex = 0
-    canvas.setAttribute("aria-label", "3D viewport. Arrow keys pan the camera.")
+    canvas.setAttribute('aria-label', '3D viewport. Arrow keys pan the camera.')
     controls.listenToKeyEvents(canvas)
     controls.addEventListener('change', () => invalidate())
-    controls.update()
-    return () => { controls.stopListenToKeyEvents(); controls.dispose() }
+    return () => {
+      orbit.current = null
+      controls.stopListenToKeyEvents()
+      controls.dispose()
+    }
   }, [camera, gl, invalidate])
+  const portraitFit = Math.max(1, 1.24 * size.height / Math.max(size.width, 1))
+  useEffect(() => {
+    if (!orbit.current) return
+    const [x, y, z] = views[view]
+    camera.position.set(x, y, z).multiplyScalar((view === 'Perspective' ? 27 : 32) * portraitFit)
+    orbit.current.target.set(0, .6, 0)
+    orbit.current.update()
+    invalidate()
+  }, [camera, invalidate, portraitFit, revision, view])
   return null
 }
 
-function Surface({ span, root, tip, sweep, dihedral, color }: {
-  span: number; root: number; tip: number; sweep: number; dihedral: number; color: string
-}) {
-  const geo = useMemo(() => {
-    const vertices: number[] = []
-    const width = span / 2
-    const offset = Math.tan(sweep * Math.PI / 180) * width
-    const rise = Math.tan(dihedral * Math.PI / 180) * width
-    for (const side of [-1, 1]) {
-      const x = width * side
-      vertices.push(0, 0, -root / 4, x, rise, offset - tip / 4, x, rise, offset + 3 * tip / 4,
-        0, 0, -root / 4, x, rise, offset + 3 * tip / 4, 0, 0, 3 * root / 4)
-    }
-    const geometry = new BufferGeometry()
-    geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3))
-    geometry.computeVertexNormals()
-    return geometry
-  }, [span, root, tip, sweep, dihedral])
-  useEffect(() => () => geo.dispose(), [geo])
-  return <mesh geometry={geo}><meshStandardMaterial color={color} metalness={.25} roughness={.5} side={DoubleSide} /></mesh>
+function StudioLighting() {
+  const { gl, scene, invalidate } = useThree()
+  useEffect(() => {
+    const room = new RoomEnvironment()
+    const generator = new PMREMGenerator(gl)
+    const target = generator.fromScene(room, .08)
+    scene.environment = target.texture
+    scene.environmentIntensity = .72
+    room.dispose()
+    generator.dispose()
+    invalidate()
+    return () => { scene.environment = null; target.dispose() }
+  }, [gl, scene, invalidate])
+  return <>
+    <hemisphereLight args={['#eff3fb', '#42424b', 1.05]} />
+    <directionalLight color="#fff6ed" position={[-17, 22, -25]} intensity={2.1} />
+    <directionalLight color="#c8d6ee" position={[9, 10, 17]} intensity={2.6} />
+  </>
 }
 
-function Airplane({ config }: { config: Airframe }) {
-  const { root_chord: root, tip_chord: tip } = dimensions(config)
-  const { length, width, tail } = config
-  return <group rotation={[0, -.18, 0]}>
-    <mesh rotation={[Math.PI / 2, 0, 0]} scale={[width / 2, length / 2, width / 2]}>
-      <sphereGeometry args={[1, 48, 24]} />
-      <meshStandardMaterial color="#a4bcd4" metalness={.44} roughness={.28} />
+function Floor({ height }: { height: number }) {
+  const shadow = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = 128
+    const ctx = canvas.getContext('2d')!
+    const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64)
+    gradient.addColorStop(0, 'rgba(0,0,0,.5)')
+    gradient.addColorStop(.5, 'rgba(0,0,0,.29)')
+    gradient.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, 128, 128)
+    return new CanvasTexture(canvas)
+  }, [])
+  useEffect(() => () => shadow.dispose(), [shadow])
+  return <group position={[0, height, 0]}>
+    <gridHelper args={[115, 23, '#373c43', '#282c31']} />
+    <mesh position={[0, .018, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[45, 51]} />
+      <meshBasicMaterial map={shadow} transparent depthWrite={false} />
     </mesh>
-    <mesh position={[0, width * .31, -length * .405]} scale={[width * .36, width * .17, length * .056]}>
-      <sphereGeometry args={[1, 24, 16]} /><meshStandardMaterial color="#102e44" metalness={.55} roughness={.2} />
-    </mesh>
-    <Surface span={config.span} root={root} tip={tip} sweep={config.sweep} dihedral={config.dihedral} color="#9cb6d2" />
-    <group position={[0, width * .23, length * .36]}>
-      <Surface span={config.span * .37 * tail} root={root * .56 * tail} tip={tip * .67 * tail}
-        sweep={30} dihedral={4} color="#819fbf" />
-      <group rotation={[0, 0, Math.PI / 2]}>
-        <Surface span={width * 2.4 * tail} root={root * .52 * tail} tip={tip * .5 * tail}
-          sweep={26} dihedral={0} color="#829bb8" />
-      </group>
-    </group>
-    {[-1, 1].map(sign => <group key={sign} position={[sign * config.span * .21, -width * .34, root * .02]}
-      rotation={[Math.PI / 2, 0, 0]}>
-      <mesh><cylinderGeometry args={[width * .27, width * .25, width * 1.05, 32]} />
-        <meshStandardMaterial color="#7c9ebc" metalness={.5} roughness={.3} /></mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -width * .53, 0]}>
-        <circleGeometry args={[width * .2, 28]} /><meshBasicMaterial color="#102538" side={DoubleSide} />
-      </mesh>
-    </group>)}
   </group>
 }
 
@@ -87,33 +100,41 @@ function Trajectory({ airframe, samples, index }: { airframe: Airframe; samples:
     const scale = 32 / Math.max(1, samples.at(-1)!.distance)
     return samples.map(s => new Vector3((s.distance * scale) - 16, 1 + (s.altitude - samples[0].altitude) * scale, 0))
   }, [samples])
-  const ref = useRef<BufferGeometry>(null)
-  useEffect(() => { ref.current?.setFromPoints(vectors.slice(1).flatMap((point, i) => [vectors[i], point])) }, [vectors])
+  const geometry = useMemo(() =>
+    new BufferGeometry().setFromPoints(vectors.slice(1).flatMap((point, i) => [vectors[i], point])), [vectors])
+  useEffect(() => () => geometry.dispose(), [geometry])
   return <>
     <lineSegments>
-      <bufferGeometry ref={ref} />
-      <lineBasicMaterial color="#52e6f5" />
+      <primitive object={geometry} attach="geometry" />
+      <lineBasicMaterial color="#80bdff" />
     </lineSegments>
-    <group position={vectors[index]} rotation={[0, -Math.PI / 2 + .18, samples[index].angle]} scale={.105}>
-      <Airplane config={airframe} />
+    <group position={vectors[index]} rotation={[0, 0, samples[index].angle]} scale={3.4 / Math.max(airframe.span, airframe.length)}>
+      <group rotation={[0, -Math.PI / 2, 0]}><Aircraft config={airframe} /></group>
     </group>
   </>
 }
 
-export function Scene({ airframe, samples, index = 0 }: { airframe: Airframe; samples?: Sample[]; index?: number }) {
-  return <div className="scene" role="img" aria-label={samples ? "Interactive 3D flight trajectory" : "Interactive 3D aircraft geometry"}>
-    <GraphicsBoundary>
-      <Canvas frameloop="demand" dpr={[1, 1.6]} camera={{ position: [26, 18, -27], fov: 42 }}>
-        <ambientLight intensity={1.35} />
-        <directionalLight color="#d7edff" position={[-12, 22, -10]} intensity={2.6} />
-        <directionalLight color="#40c1ff" position={[18, 6, 12]} intensity={1.25} />
-        <gridHelper args={[110, 44, '#1f4d64', '#163045']} position={[0, -2, 0]} />
-        <axesHelper args={[5]} position={[-19, -1.96, 14]} />
-        <Orbit />
-        {samples ? <Trajectory airframe={airframe} samples={samples} index={index} /> : <Airplane config={airframe} />}
-      </Canvas>
-    </GraphicsBoundary>
-    <span className="scene-caption">X / SPAN · Y / UP · Z / AXIAL</span>
+export function Scene({ airframe, samples, index = 0, controls = false }: {
+  airframe: Airframe; samples?: Sample[]; index?: number; controls?: boolean
+}) {
+  const [camera, setCamera] = useState<{ view: View; revision: number }>({ view: 'Perspective', revision: 0 })
+  const scale = 42 / Math.max(airframe.span, airframe.length)
+  return <div className="scene">
+    <div className="scene-render" role="img" aria-label={samples ? 'Interactive 3D flight trajectory' : 'Interactive 3D aircraft geometry'}>
+      <GraphicsBoundary>
+        <Canvas frameloop="demand" dpr={[1, 1.6]} camera={{ fov: 40, near: .1, far: 260, position: [30, 16, -37] }}>
+          <StudioLighting />
+          <Floor height={samples ? -2.5 : -.9 * airframe.width * scale} />
+          <Orbit {...camera} />
+          {samples ? <Trajectory airframe={airframe} samples={samples} index={index} /> :
+            <group scale={scale}><Aircraft config={airframe} /></group>}
+        </Canvas>
+      </GraphicsBoundary>
+    </div>
+    {controls && !samples && <div className="scene-views" role="group" aria-label="Camera view">
+      {(Object.keys(views) as View[]).map(view => <button key={view} aria-pressed={camera.view === view}
+        onClick={() => setCamera({ view, revision: camera.revision + 1 })}>{view}</button>)}
+    </div>}
     <span className="scene-help">Drag to orbit · Scroll to zoom</span>
     {!samples && <span className="scene-dimensions">{airframe.span.toFixed(1)} m span · {airframe.area.toFixed(1)} m²</span>}
   </div>
